@@ -1,0 +1,115 @@
+---
+config:
+  theme: base
+  themeVariables:
+    primaryColor: '#E3F2FD'
+    primaryTextColor: '#000'
+    fontSize: 32px
+  flowchart:
+    curve: basis
+    nodeSpacing: 30
+    rankSpacing: 40
+    padding: 20
+  layout: elk
+---
+flowchart LR
+ subgraph G_Comp["Competition"]
+    direction LR
+        DB_SGS[("SGS & ALS")]
+        SGS_Inputs[/"ALS Metrics<br>&amp; Hegyi"/]
+        CompLearner{{"Comp Learner<br>(RF)"}}
+  end
+ subgraph G_Base["Base"]
+    direction LR
+        DB_LiDAR[("Drone LiDAR")]
+        N70_Inputs[/"N=70 LiDAR &amp;<br>Photo Targets"/]
+        BaseRF{{"Base Learner<br>(RF)"}}
+  end
+ subgraph S1["Stage 1: Base Models"]
+    direction LR
+        G_Comp
+        G_Base
+  end
+ subgraph G_Apply["Meta-Features"]
+    direction TB
+        ApplyComp(["Predict<br>Hegyi"])
+        ApplyBDM(["Predict Vigour"])
+  end
+ subgraph S2["Stage 2: Meta-Regressor"]
+    direction LR
+        SGS_ALS_S2[/"SGS ALS"/]
+        G_Apply
+        N140_SGS[/"N=140 Photo<br>Targets"/]
+        MetaRF{{"Meta-Regressor<br>(RF)"}}
+  end
+ subgraph G_Wall["Wall-to-Wall"]
+    direction TB
+        BDM_Wall["Apply Base"]
+        Comp_Wall["Apply Comp"]
+  end
+ subgraph G_Maps["Outputs"]
+    direction TB
+        Map1["Vigour Surface"]
+        Map2["Prediction Error"]
+        Map3["Density Map"]
+  end
+ subgraph S3["Stage 3: Mapping"]
+    direction LR
+        DB_Wall[("Continuous ALS")]
+        G_Wall
+        ApplyMeta(["Apply Stacked<br>Model"])
+        G_Maps
+  end
+    DB_SGS --> SGS_Inputs
+    SGS_Inputs --> CompLearner
+    DB_LiDAR --> N70_Inputs
+    N70_Inputs --> BaseRF
+    SGS_ALS_S2 --> ApplyComp & ApplyBDM
+    ApplyComp --> MetaRF
+    ApplyBDM --> MetaRF
+    N140_SGS --> MetaRF
+    DB_Wall --> BDM_Wall & Comp_Wall & Map3
+    BDM_Wall --> ApplyMeta
+    Comp_Wall --> ApplyMeta
+    ApplyMeta --> Map1 & Map2
+    DB_SGS ~~~ SGS_ALS_S2
+    CompLearner -.- ModelLabel1["Model"] & ModelLabel3["Model"]
+    ModelLabel1 -.-> ApplyComp
+    BaseRF -.- ModelLabel2["Model"] & ModelLabel4["Model"]
+    ModelLabel2 -.-> ApplyBDM
+    ModelLabel3 -.-> Comp_Wall
+    ModelLabel4 -.-> BDM_Wall
+    MetaRF -.- ModelLabel5["Stacked Model"]
+    ModelLabel5 -.-> ApplyMeta
+    S1 ==> S2
+    S2 ==> S3
+
+     DB_SGS:::db
+     SGS_Inputs:::input
+     CompLearner:::model
+     DB_LiDAR:::db
+     N70_Inputs:::input
+     BaseRF:::model
+     ApplyComp:::process
+     ApplyBDM:::process
+     SGS_ALS_S2:::input
+     N140_SGS:::input
+     MetaRF:::model
+     BDM_Wall:::process
+     Comp_Wall:::process
+     Map1:::output
+     Map2:::output
+     Map3:::output
+     DB_Wall:::db
+     ApplyMeta:::process
+     ModelLabel1:::labelBox
+     ModelLabel3:::labelBox
+     ModelLabel2:::labelBox
+     ModelLabel4:::labelBox
+     ModelLabel5:::labelBox
+    classDef db fill:#E0E0E0,stroke:#666,stroke-width:2px
+    classDef input fill:#DAE8FC,stroke:#6C8EBF,stroke-width:2px
+    classDef model fill:#D5E8D4,stroke:#82B366,stroke-width:2px
+    classDef process fill:#F5F5F5,stroke:#666,stroke-width:2px,rx:5,ry:5
+    classDef output fill:#FFE6CC,stroke:#D79B00,stroke-width:3px
+    classDef labelBox fill:#FFFFFF,stroke:none,font-size:22px,font-style:italic
