@@ -1,0 +1,96 @@
+---
+config:
+  theme: base
+  themeVariables:
+    primaryColor: '#E3F2FD'
+    primaryTextColor: '#000'
+    primaryBorderColor: '#1565C0'
+    lineColor: '#333'
+    secondaryColor: '#ECEFF1'
+    tertiaryColor: '#fff'
+    fontSize: 26px
+    fontFamily: Arial
+  flowchart:
+    nodeSpacing: 40
+    rankSpacing: 50
+    padding: 40
+    curve: basis
+---
+flowchart LR
+ subgraph Geometry["A. Geometry"]
+    direction TB
+        NEIGHBOR["Radius Search<br>(r = 2.0 m)"]
+        COV["Covariance Matrix Σ"]
+        EIGEN["Eigen Decomposition<br>λ1 ≥ λ2 ≥ λ3"]
+        LIN_CALC["Linearity = (λ1 - λ2) / λ1"]
+        SPH_CALC["Sphericity = λ3 / λ1"]
+  end
+ subgraph Exposure["B. Exposure"]
+    direction TB
+        HULL["Construct Concave Hull<br>(Alpha Shape)"]
+        DIST["Euclidean Distance<br>d = ||P_vox - P_hull||"]
+        SCORE_DIST["Proximity Score<br>S_prox = 1 / (1 + d)"]
+        POLAR["Spherical Conversion<br>r = √(x²+y²+z²)<br>Azimuth θ = atan2(y,x)<br>Inclination φ = acos(z/r)"]
+        MAP["Bin Indexing (20° Steps)<br>u = floor(θ / 2π * 18)<br>v = floor(φ / π * 9)"]
+        TRANS_GRID[/"Transparency Map T<br>18 (Horiz) x 9 (Vert)"/]
+        LOOKUP["Lookup Voxel Value<br>V_trans = T(u, v)"]
+        SCORE_VIEW["Visual Score<br>(Sky Visibility %)"]
+        EXP_VAL["Composite Exposure<br>E = max(V_trans, S_prox)"]
+  end
+ subgraph Spectral["C. Spectral"]
+    direction TB
+        RGB["Extract Norm. RGB"]
+        EXG["Excess Green Index<br>ExG = 2*G - R - B"]
+  end
+    VOX_IN(["Voxelized<br>Point Cloud"]) --> NEIGHBOR & POLAR & HULL & RGB
+    NEIGHBOR --> COV
+    COV --> EIGEN
+    EIGEN --> LIN_CALC & SPH_CALC
+    POLAR --> MAP
+    TRANS_GRID --> LOOKUP
+    MAP --> LOOKUP
+    LOOKUP --> SCORE_VIEW
+    HULL --> DIST
+    DIST --> SCORE_DIST
+    SCORE_VIEW --> EXP_VAL
+    SCORE_DIST --> EXP_VAL
+    RGB --> EXG
+    LIN_CALC --> CLASS_TREE["Classification Tree<br>"]
+    SPH_CALC --> CLASS_TREE
+    EXP_VAL --> CLASS_TREE
+    EXG --> CLASS_TREE
+    CLASS_TREE -- Live --> LIVE(["LIVE CANOPY"])
+    CLASS_TREE -- Interior --> PRUNED(["INTERIOR DEAD / PRUNED"])
+    CLASS_TREE -- Exposed --> TARGET(["TARGET: DIEBACK"])
+
+     NEIGHBOR:::calc
+     COV:::math
+     EIGEN:::math
+     LIN_CALC:::calc
+     SPH_CALC:::calc
+     HULL:::math
+     DIST:::math
+     SCORE_DIST:::calc
+     POLAR:::math
+     MAP:::calc
+     TRANS_GRID:::grid
+     LOOKUP:::process
+     SCORE_VIEW:::calc
+     EXP_VAL:::math
+     RGB:::calc
+     EXG:::math
+     VOX_IN:::input
+     CLASS_TREE:::gate
+     LIVE:::outLive
+     PRUNED:::outPruned
+     TARGET:::outDieback
+    classDef input fill:#BBDEFB,stroke:#1565C0,stroke-width:3px,color:#000,font-weight:bold
+    classDef process fill:#ECEFF1,stroke:#455A64,stroke-width:2px,color:#000
+    classDef calc fill:#E1F5FE,stroke:#0277BD,stroke-width:2px,color:#000,font-style:italic
+    classDef math fill:#FFF3E0,stroke:#EF6C00,stroke-width:2px,color:#000
+    classDef grid fill:#E0F2F1,stroke:#00695C,stroke-width:2px,color:#000,stroke-dasharray: 5 5
+    classDef param fill:#FFECB3,stroke:#FF6F00,stroke-width:2px,color:#000,font-weight:bold
+    classDef gate fill:#FFF9C4,stroke:#FBC02d,stroke-width:3px,color:#000,font-weight:bold
+    classDef outLive fill:#C8E6C9,stroke:#2E7D32,stroke-width:3px,color:#004D40,font-weight:bold
+    classDef outPruned fill:#D7CCC8,stroke:#5D4037,stroke-width:3px,color:#3E2723,font-weight:bold
+    classDef outDieback fill:#FFCDD2,stroke:#D50000,stroke-width:6px,color:#B71C1C,font-size:32px,font-weight:bold
