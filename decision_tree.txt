@@ -1,0 +1,73 @@
+---
+config:
+  theme: base
+  themeVariables:
+    primaryColor: '#E3F2FD'
+    primaryTextColor: '#000'
+    primaryBorderColor: '#1565C0'
+    lineColor: '#333'
+    secondaryColor: '#ECEFF1'
+    tertiaryColor: '#fff'
+    fontSize: 26px
+    fontFamily: Arial
+  flowchart:
+    nodeSpacing: 15
+    rankSpacing: 25
+    curve: basis
+  layout: elk
+---
+flowchart LR
+ subgraph F["Features"]
+    direction LR
+        EXP["Composite Exposure (E)<br>E = max(V_trans, S_prox)"]
+        EXG["Excess Green (ExG)"]
+        SPH["Sphericity (S)"]
+        LIN["Linearity (L)"]
+  end
+ subgraph P["Thresholds"]
+    direction TB
+        TH_EXP["θ_exp"]
+        TH_BIO["θ_bio"]
+        TH_SPH["θ_sph"]
+        TH_LIN["θ_lin"]
+  end
+    LIN --> G0{"Is Geometry<br>Foliage-like?<br>IF (S &gt; θ_sph) AND (L &lt; θ_lin)"}
+    SPH --> G0
+    G0 -- True --> G1{"Has Photosynthetic<br>Live foliage?<br>IF (ExG &gt; θ_bio)"}
+    G0 -- False --> WOOD["Woody / structured voxel<br>(branch or stem candidate)"]
+    WOOD --> G2{"Is Voxel<br>Exposed?<br>IF (E &gt; θ_exp)"}
+    EXG --> G1
+    G1 -- True --> LIVE(["LIVE CANOPY"])
+    G1 -- False --> NONGREEN["Non-green foliage voxel<br>(senescent / dead leaf candidate)"]
+    NONGREEN --> G2
+    EXP --> G2
+    G2 -- True --> DIEBACK(["DIEBACK"])
+    G2 -- False --> PRUNED(["INTERIOR DEAD / PRUNED"])
+    TH_LIN -.-> G0
+    TH_SPH -.-> G0
+    TH_BIO -.-> G1
+    TH_EXP -.-> G2
+
+     EXP:::input
+     EXG:::input
+     SPH:::input
+     LIN:::input
+     TH_EXP:::param
+     TH_BIO:::param
+     TH_SPH:::param
+     TH_LIN:::param
+     G0:::gate
+     G1:::gate
+     WOOD:::process
+     G2:::gate
+     LIVE:::outLive
+     NONGREEN:::process
+     DIEBACK:::outDieback
+     PRUNED:::outPruned
+    classDef input fill:#BBDEFB,stroke:#1565C0,stroke-width:3px,color:#000,font-weight:bold
+    classDef process fill:#ECEFF1,stroke:#455A64,stroke-width:2px,color:#000
+    classDef gate fill:#FFF9C4,stroke:#FBC02d,stroke-width:3px,color:#000,font-weight:bold
+    classDef param fill:#FFECB3,stroke:#FF6F00,stroke-width:2px,color:#000,font-weight:bold,font-size:34px
+    classDef outLive fill:#C8E6C9,stroke:#2E7D32,stroke-width:3px,color:#004D40,font-weight:bold
+    classDef outPruned fill:#D7CCC8,stroke:#5D4037,stroke-width:3px,color:#3E2723,font-weight:bold
+    classDef outDieback fill:#FFCDD2,stroke:#D50000,stroke-width:6px,color:#B71C1C,font-size:32px,font-weight:bold
